@@ -58,29 +58,70 @@
         </div>
     </section>
 
-    <!-- Section 2: Plan -->
-    <section id="services" class="py-8 bg-[#faf4ef]">
-        <div class="container mx-auto text-center">
-            <h2 class="text-4xl font-bold mb-4">Ajude o Casal</h2>
-            <p class="mb-8 text-xl">Contribua com nosso futuro lar escolhendo um dos produtos abaixo. Sua ajuda será fundamental para mobiliarmos nossa casa!</p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                @foreach($produtos as $produto)
-                    <div class="bg-white p-6 rounded shadow">
-                        <img src="{{ Storage::url($produto->image_path) ?? 'https://placehold.co/300x200' }}" 
-                             alt="{{ $produto->name }}" 
-                             class="w-full h-48 object-cover rounded mb-4">
-                        <p class="text-2xl font-bold">{{ $produto->name }}</p>
-                        <p class="text-gray-500 text-xl">R$ {{ number_format($produto->price, 2, ',', '.') }}</p>
-                        <p class="text-gray-600 mt-2">{{ $produto->quota}} cotas</p>
-                        <button class="mt-4 bg-[#7e795b] text-white px-6 py-2 rounded hover:bg-[#5c5741]"
-                                onclick="window.location.href=''">
-                            Ajudar
+   <!-- Section 2: Plan -->
+<section id="services" class="py-8 bg-[#faf4ef]">
+    <div class="container mx-auto text-center">
+        <h2 class="text-4xl font-bold mb-4">Ajude o Casal</h2>
+        <p class="mb-8 text-xl">Contribua com nosso futuro lar escolhendo um dos produtos abaixo. Sua ajuda será fundamental para mobiliarmos nossa casa!</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            @foreach($produtos as $produto)
+                <div class="bg-white p-6 rounded shadow">
+                    <img src="{{ $produto->image_path ? Storage::url($produto->image_path) : 'https://placehold.co/300x200' }}" 
+                         alt="{{ $produto->name }}" 
+                         class="w-full h-48 object-cover rounded mb-4">
+                    <p class="text-2xl font-bold">{{ $produto->name }}</p>
+                    <p class="text-gray-500 text-xl">R$ {{ number_format($produto->price, 2, ',', '.') }}</p>
+                    <p class="text-gray-600 mt-2">Disponível: {{ $produto->quota }} cotas</p>
+                    <div class="mt-4">
+                        <input type="number" 
+                               min="1" 
+                               max="{{ $produto->quota }}" 
+                               value="1" 
+                               class="quantidade-cotas border rounded px-2 py-1 w-20 text-center"
+                               data-produto-id="{{ $produto->id }}">
+                        <button onclick="iniciarCheckout({{ $produto->id }})" 
+                                class="mt-2 bg-[#7e795b] text-white px-6 py-2 rounded hover:bg-[#5c5741]">
+                            Comprar Cota
                         </button>
                     </div>
-                @endforeach
-            </div>
+                </div>
+            @endforeach
         </div>
-    </section>
+    </div>
+
+    @push('scripts')
+    <script>
+    function iniciarCheckout(produtoId) {
+        const quantidade = document.querySelector(`[data-produto-id="${produtoId}"]`).value;
+        
+        fetch(`/checkout/${produtoId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ quantidade_cotas: quantidade })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro na resposta do servidor');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.url) {
+                window.location.href = data.url;
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Ocorreu um erro ao processar o checkout');
+        });
+    }
+    </script>
+    @endpush
+</section>
 
     <!-- Section 3: Gallery -->
     
@@ -93,4 +134,5 @@
 
 </body>
 
+@stack('scripts')
 </html>
