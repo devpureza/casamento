@@ -33,7 +33,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 h-full">
                 <div class="flex items-center justify-center px-6 py-8 md:py-0">
                     <div class="text-[#7e795b] text-center md:text-left">
-                        <p class="uppercase tracking-widest text-sm mb-2 font-['Playfair_Display']">Frase para casamento</p>
+                        <p class="uppercase tracking-widest text-sm mb-2 font-['Playfair_Display']">Bem vindos!</p>
                         <h1 class="font-['Great_Vibes'] text-4xl sm:text-5xl md:text-7xl">Aninha & Pureza</h1>
                         <p class="max-w-md text-lg sm:text-2xl mx-auto md:mx-0">Juntos, escrevemos nossa história de amor. Compartilhe conosco este momento único e especial.</p>
                     </div>
