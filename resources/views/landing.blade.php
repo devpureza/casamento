@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wedding Landing Page</title>
+    <title>Mateus Pureza e Ana Tipple</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link
@@ -50,7 +50,7 @@
                 <img src="/images/02.png" alt="Dream Image" class="rounded w-full h-full object-cover">
             </div>
             <div>
-                <h2 class="text-4xl text-[#7e795b] font-['Great_Vibes'] mb-4">Construindo Nosso Sonho Juntos</h2>
+                <h2 class="text-4xl text-[#7e795b] font-['Great_Vibes'] mb-4">Construindo nosso sonho juntos</h2>
                 <p class="text-xl">O amor é a força que nos une e nos faz crescer. A cada dia, construímos memórias preciosas e sonhos compartilhados que tornam nossa jornada única e especial.</p>
                 <a href="#"
                     class="mt-4 inline-block bg-[#7e795b] text-white px-6 py-3 rounded hover:bg-[#5c5741] text-xl">Explore</a>
@@ -73,15 +73,34 @@
                     <p class="text-gray-500 text-xl">R$ {{ number_format($produto->price, 2, ',', '.') }}</p>
                     <p class="text-gray-600 mt-2">Disponível: {{ $produto->quota }} cotas</p>
                     <div class="mt-4">
-                        <input type="number" 
-                               min="1" 
-                               max="{{ $produto->quota }}" 
-                               value="1" 
-                               class="quantidade-cotas border rounded px-2 py-1 w-20 text-center"
-                               data-produto-id="{{ $produto->id }}">
-                        <button onclick="iniciarCheckout({{ $produto->id }})" 
-                                class="mt-2 bg-[#7e795b] text-white px-6 py-2 rounded hover:bg-[#5c5741]">
-                            Comprar Cota
+                        <div class="flex items-center justify-center gap-4 mb-3">
+                            <button onclick="diminuirQuantidade({{ $produto->id }})" 
+                                    class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center">
+                                <span class="text-xl">-</span>
+                            </button>
+                            
+                            <input type="number" 
+                                   min="1" 
+                                   max="{{ $produto->quota }}" 
+                                   value="1" 
+                                   class="quantidade-cotas border-none w-16 text-center text-xl"
+                                   data-produto-id="{{ $produto->id }}"
+                                   readonly>
+                            
+                            <button onclick="aumentarQuantidade({{ $produto->id }})" 
+                                    class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center">
+                                <span class="text-xl">+</span>
+                            </button>
+                        </div>
+                        <button onclick="iniciarCheckout({{ $produto->id }}, this)" 
+                                class="w-full mt-2 bg-[#7e795b] text-white px-6 py-2 rounded hover:bg-[#5c5741] relative">
+                            <span class="botao-texto">Comprar Cota</span>
+                            <span class="loading-spinner hidden">
+                                <svg class="animate-spin h-5 w-5 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -91,7 +110,30 @@
 
     @push('scripts')
     <script>
-    function iniciarCheckout(produtoId) {
+    function aumentarQuantidade(produtoId) {
+        const input = document.querySelector(`[data-produto-id="${produtoId}"]`);
+        const novoValor = parseInt(input.value) + 1;
+        if (novoValor <= parseInt(input.max)) {
+            input.value = novoValor;
+        }
+    }
+
+    function diminuirQuantidade(produtoId) {
+        const input = document.querySelector(`[data-produto-id="${produtoId}"]`);
+        const novoValor = parseInt(input.value) - 1;
+        if (novoValor >= parseInt(input.min)) {
+            input.value = novoValor;
+        }
+    }
+
+    function iniciarCheckout(produtoId, botao) {
+        // Mostrar loading
+        const textoBtn = botao.querySelector('.botao-texto');
+        const loadingSpinner = botao.querySelector('.loading-spinner');
+        textoBtn.classList.add('hidden');
+        loadingSpinner.classList.remove('hidden');
+        botao.disabled = true;
+        
         const quantidade = document.querySelector(`[data-produto-id="${produtoId}"]`).value;
         
         fetch(`/checkout/${produtoId}`, {
@@ -117,6 +159,10 @@
         .catch(error => {
             console.error('Erro:', error);
             alert('Ocorreu um erro ao processar o checkout');
+            // Restaurar botão ao estado original
+            textoBtn.classList.remove('hidden');
+            loadingSpinner.classList.add('hidden');
+            botao.disabled = false;
         });
     }
     </script>
