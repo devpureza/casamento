@@ -29,7 +29,7 @@
                         <!-- Mensagens -->
                         <a href="{{ route('admin.mensagens.index') }}" 
                            class="hover:bg-blue-800 px-3 py-2 rounded-md {{ request()->routeIs('admin.mensagens.index') ? 'bg-blue-800' : '' }}">
-                            Mensagens
+                           Suas Mensagens
                         </a>
 
                         <!-- Produtos Dropdown -->
