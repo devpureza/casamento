@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\MensagemController;
 use App\Http\Controllers\StripeController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // Rotas de usuários
     Route::resource('users', UserController::class);
     Route::resource('products', ProductController::class);
+    
+    // Rotas de mensagens - Correção aqui
+    Route::resource('mensagens', MensagemController::class)->only(['index', 'show']);
 });
 
 Route::post('/checkout/{product}', [StripeController::class, 'checkout'])->name('stripe.checkout');

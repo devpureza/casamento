@@ -14,6 +14,46 @@
 
 <body class="bg-[#fdf9f6] text-gray-800 font-['Dancing_Script']">
 
+    <!-- Adicionar o Modal antes do header -->
+    <div id="mensagemModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50" role="dialog">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-2xl font-['Great_Vibes'] text-[#7e795b] mb-4 text-center">Deixe sua mensagem para os noivos</h3>
+                <form id="mensagemForm" class="mt-4">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-['Playfair_Display'] mb-2">Nome</label>
+                        <input type="text" id="nome" name="nome" required 
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline font-['Playfair_Display']">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-['Playfair_Display'] mb-2">E-mail</label>
+                        <input type="email" id="email" name="email" required 
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline font-['Playfair_Display']">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-['Playfair_Display'] mb-2">Mensagem para os noivos</label>
+                        <textarea id="mensagem" name="mensagem" required 
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline font-['Playfair_Display']" 
+                                rows="4"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="fecharModal()" 
+                                class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 font-['Playfair_Display']">
+                            Cancelar
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-[#7e795b] text-white rounded hover:bg-[#5c5741] font-['Playfair_Display']">
+                            Continuar para pagamento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="bg-white shadow fixed w-full z-10">
         <div class="container mx-auto flex items-center justify-between px-6 py-4">
@@ -92,7 +132,8 @@
                                 <span class="text-xl">+</span>
                             </button>
                         </div>
-                        <button onclick="iniciarCheckout({{ $produto->id }}, this)" 
+                        <button id="btn-comprar-{{ $produto->id }}" 
+                                onclick="abrirModal({{ $produto->id }}, this)" 
                                 class="w-full mt-2 bg-[#7e795b] text-white px-6 py-2 rounded hover:bg-[#5c5741] relative">
                             <span class="botao-texto">Comprar Cota</span>
                             <span class="loading-spinner hidden">
@@ -126,16 +167,77 @@
         }
     }
 
-    function iniciarCheckout(produtoId, botao) {
-        // Mostrar loading
+    function fecharModal() {
+        document.getElementById('mensagemModal').classList.add('hidden');
+    }
+
+    function abrirModal(produtoId, botaoOrigem) {
+        const quantidadeInput = document.querySelector(`[data-produto-id="${produtoId}"]`);
+        const quantidade = parseInt(quantidadeInput?.value) || 1;
+        
+        const modal = document.getElementById('mensagemModal');
+        
+        // Armazenar dados importantes no modal
+        modal.dataset.produtoId = produtoId;
+        modal.dataset.quantidade = quantidade;
+        
+        console.log('Abrindo modal - Produto ID:', produtoId);
+        console.log('Quantidade selecionada:', quantidade);
+        
+        modal.classList.remove('hidden');
+    }
+
+    // Adicionar listener para o formulário
+    document.getElementById('mensagemForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const modal = document.getElementById('mensagemModal');
+        const produtoId = modal.dataset.produtoId;
+        
+        // Pegar a quantidade diretamente do dataset do modal
+        const quantidade = parseInt(modal.dataset.quantidade) || 1;
+        
+        const dadosFormulario = {
+            quantidade_cotas: quantidade,
+            nome: document.getElementById('nome').value,
+            email: document.getElementById('email').value,
+            mensagem: document.getElementById('mensagem').value
+        };
+
+        // Log para debug
+        console.log('Produto ID:', produtoId);
+        console.log('Quantidade:', quantidade);
+        console.log('Dados completos:', dadosFormulario);
+
+        const botaoOrigem = document.querySelector(`#btn-comprar-${produtoId}`);
+        
+        if (!botaoOrigem) {
+            console.error('Botão não encontrado para o produto:', produtoId);
+            return;
+        }
+
+        fecharModal();
+        iniciarCheckout(produtoId, botaoOrigem, dadosFormulario);
+    });
+
+    function iniciarCheckout(produtoId, botao, dadosFormulario) {
+        console.log('Iniciando checkout com dados:', dadosFormulario);
+
         const textoBtn = botao.querySelector('.botao-texto');
         const loadingSpinner = botao.querySelector('.loading-spinner');
-        textoBtn.classList.add('hidden');
-        loadingSpinner.classList.remove('hidden');
-        botao.disabled = true;
         
-        const quantidade = document.querySelector(`[data-produto-id="${produtoId}"]`).value;
-        
+        if (textoBtn && loadingSpinner) {
+            textoBtn.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+            botao.disabled = true;
+        }
+
+        // Garantir que quantidade_cotas seja um número
+        const dadosEnvio = {
+            ...dadosFormulario,
+            quantidade_cotas: parseInt(dadosFormulario.quantidade_cotas) || 1
+        };
+
         fetch(`/checkout/${produtoId}`, {
             method: 'POST',
             headers: {
@@ -143,26 +245,26 @@
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ quantidade_cotas: quantidade })
+            body: JSON.stringify(dadosEnvio)
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro na resposta do servidor');
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
             if (data.url) {
                 window.location.href = data.url;
             }
         })
         .catch(error => {
-            console.error('Erro:', error);
-            alert('Ocorreu um erro ao processar o checkout');
-            // Restaurar botão ao estado original
-            textoBtn.classList.remove('hidden');
-            loadingSpinner.classList.add('hidden');
-            botao.disabled = false;
+            console.error('Erro no checkout:', error);
+            alert('Erro no checkout: ' + error.message);
+            
+            if (textoBtn && loadingSpinner) {
+                textoBtn.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                botao.disabled = false;
+            }
         });
     }
     </script>
