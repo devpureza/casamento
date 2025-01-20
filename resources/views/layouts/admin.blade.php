@@ -26,6 +26,12 @@
                             Home
                         </a>
 
+                        <!-- Mensagens -->
+                        <a href="{{ route('admin.mensagens.index') }}" 
+                           class="hover:bg-blue-800 px-3 py-2 rounded-md {{ request()->routeIs('admin.mensagens.index') ? 'bg-blue-800' : '' }}">
+                            Mensagens
+                        </a>
+
                         <!-- Produtos Dropdown -->
                         <div x-data="{ open: false }" class="relative">
                             <button @click="open = !open" @click.away="open = false" 

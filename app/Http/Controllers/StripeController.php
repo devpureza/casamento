@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Mensagem;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Stripe\Stripe;
@@ -18,9 +19,24 @@ class StripeController extends Controller
     public function checkout(Request $request, Product $product)
     {
         try {
+            // Log para debug
+            \Illuminate\Support\Facades\Log::info('Dados recebidos:', $request->all());
+
+            // Validar os dados recebidos
+            $validated = $request->validate([
+                'quantidade_cotas' => 'required|integer|min:1',
+                'nome' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+                'mensagem' => 'required|string'
+            ]);
+
+            \Illuminate\Support\Facades\Log::info('Dados validados:', $validated);
+            
             \Illuminate\Support\Facades\Log::info('Iniciando checkout Stripe', [
                 'produto_id' => $product->id,
-                'quantidade' => $request->quantidade_cotas
+                'quantidade' => $request->quantidade_cotas,
+                'nome' => $request->nome,
+                'email' => $request->email
             ]);
             
             $quantidade = $request->quantidade_cotas ?? 1;
@@ -30,25 +46,24 @@ class StripeController extends Controller
                 return response()->json(['error' => 'Quantidade de cotas indisponível'], 400);
             }
 
-            \Illuminate\Support\Facades\Log::info('Dados do checkout', [
-                'produto' => $product->toArray(),
-                'valor_total' => $valorTotal,
-                'quantidade' => $quantidade
+            // Criar a mensagem no banco
+            $mensagem = Mensagem::create([
+                'product_id' => $product->id,
+                'nome' => $request->nome,
+                'email' => $request->email,
+                'mensagem' => $request->mensagem,
+                'quantidade_cotas' => $quantidade
             ]);
 
             // Define os métodos de pagamento disponíveis
-            $payment_methods = [
-                'card',          // Cartão de crédito/débito padrão
-                // 'apple_pay',     // Apple Pay
-                // 'google_pay'     // Google Pay (no Stripe é chamado de 'payment_method_types' => ['card'] com wallet habilitado)
-            ];
+            $payment_methods = ['card'];
 
             $session = Session::create([
                 'payment_method_types' => $payment_methods,
                 'line_items' => [[
                     'price_data' => [
                         'currency' => 'brl',
-                        'unit_amount' => (int)($valorTotal * 100), // Stripe usa centavos
+                        'unit_amount' => (int)($valorTotal * 100),
                         'product_data' => [
                             'name' => $product->name,
                             'description' => "Cota para presente de casamento - {$product->name}",
@@ -64,6 +79,7 @@ class StripeController extends Controller
                 'metadata' => [
                     'product_id' => $product->id,
                     'quantidade_cotas' => $quantidade,
+                    'mensagem_id' => $mensagem->id
                 ],
             ]);
 
@@ -84,6 +100,15 @@ class StripeController extends Controller
             $product = Product::find($session->metadata->product_id);
             $product->quota -= $session->metadata->quantidade_cotas;
             $product->save();
+
+            // Atualizar a mensagem com o ID da sessão
+            if (isset($session->metadata->mensagem_id)) {
+                $mensagem = Mensagem::find($session->metadata->mensagem_id);
+                if ($mensagem) {
+                    $mensagem->payment_intent_id = $session->payment_intent;
+                    $mensagem->save();
+                }
+            }
 
             return view('checkout.success');
         } catch (\Exception $e) {
