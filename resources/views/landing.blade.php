@@ -23,7 +23,7 @@
                 <a href="#about" class="hover:text-pink-500">Sobre nós</a>
                 <a href="#services" class="hover:text-pink-500">Casamento</a>
             </nav>
-            <a href="#" class="bg-[#7e795b] text-white px-4 py-2 rounded hover:bg-[#5c5741] text-xl">Loja</a>
+            <a href="#services" class="bg-[#7e795b] text-white px-4 py-2 rounded hover:bg-[#5c5741] text-xl">Presentes</a>
         </div>
     </header>
     
